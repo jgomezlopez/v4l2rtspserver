@@ -73,6 +73,14 @@ V4L2DeviceSource::V4L2DeviceSource(UsageEnvironment& env, DeviceInterface * devi
 	}
 }
 
+// Change output file descriptor
+
+void V4L2DeviceSource::setOutputFd(int outputFd) 
+{
+	pthread_mutex_lock(&m_mutex);
+	m_outfd = outputFd;
+	pthread_mutex_unlock(&m_mutex);
+}
 // Destructor
 V4L2DeviceSource::~V4L2DeviceSource()
 {	
@@ -213,10 +221,12 @@ int V4L2DeviceSource::getNextFrame()
 		LOG(DEBUG) << "getNextFrame\ttimestamp:" << ref.tv_sec << "." << ref.tv_usec << "\tsize:" << frameSize <<"\tdiff:" <<  (diff.tv_sec*1000+diff.tv_usec/1000) << "ms";
 		
 		processFrame(buffer,frameSize,ref);
+		pthread_mutex_lock(&m_mutex);
 		if (m_outfd != -1) 
 		{
 			write(m_outfd, buffer, frameSize);
 		}		
+		pthread_mutex_unlock(&m_mutex);
 	}			
 	return frameSize;
 }	
