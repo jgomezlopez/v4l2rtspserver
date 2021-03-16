@@ -97,8 +97,13 @@ endif()
 
 # librtsp
 aux_source_directory(src SRC_FILES)
-add_library (libv4l2rtspserver STATIC ${LIVESOURCE} ${SRC_FILES})	
-target_include_directories(libv4l2rtspserver PUBLIC inc ${LIVEINCLUDE})
+if (LIBLIVEMEDIA_FOUND AND LIBBASICUSAGEENVIRONMENT_FOUND AND LIBUSAGEENVIRONMENT_FOUND AND LIBGROUPSOCK_FOUND)
+    add_library (libv4l2rtspserver SHARED ${LIBSRC_FILES} ${SRC_FILES})	
+    target_link_libraries  (libv4l2rtspserver liveMedia UsageEnvironment BasicUsageEnvironment groupsock v4l2wrapper) 
+else()
+    add_library (libv4l2rtspserver STATIC v4l2wrapper ${LIVESOURCE} ${SRC_FILES})	
+endif()
+target_include_directories(libv4l2rtspserver PUBLIC inc ${LIVEINCLUDE} "v4l2wrapper/inc")
 target_link_libraries (${PROJECT_NAME} libv4l2rtspserver) 
 
 #testing

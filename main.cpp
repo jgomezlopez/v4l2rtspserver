@@ -33,10 +33,19 @@
 //    signal handler
 // -----------------------------------------
 char quit = 0;
+bool recording = false;
 void sighandler(int n)
 { 
-	printf("SIGINT\n");
-	quit =1;
+	if (n == SIGINT) {
+		printf("SIGINT\n");
+		quit =1;
+		if (recording) {
+			recording = false;
+		}
+	}
+	else if (n == SIGUSR1) {
+		recording = !recording;
+	}
 }
 
 // -------------------------------------------------------
@@ -256,6 +265,8 @@ int main(int argc, char** argv)
 	rtspWrapper.init(); 
 
 	std::list<std::string>::iterator devIt;
+	std::list<DeviceSinkWrapper *> devSinkList;
+	std::list<DeviceSinkWrapper *>::iterator devSinkIt;
 	for ( devIt=devList.begin() ; devIt!=devList.end() ; ++devIt)
 	{
 		std::string deviceName(*devIt);
@@ -282,15 +293,38 @@ int main(int argc, char** argv)
 		sinkDevice->setIoTypeIn(ioTypeIn);
 		sinkDevice->setIoTypeOut(ioTypeOut);
 		sinkDevice->setOpenFlags(openflags);
+		devSinkList.push_back(sinkDevice);
 		rtspWrapper.attachDevice(*sinkDevice);
 	}
 
 
 	// main loop
 	signal(SIGINT,sighandler);
+	signal(SIGUSR1,sighandler);
 	rtspWrapper.start(); 
+	bool prev_rec = recording;
+	int counter = 0;
 	while (quit == 0) {
 		sleep(1);
+		if (!outputFile.empty()) {
+			if (prev_rec != recording)
+			{
+				if (recording) {
+					for ( devSinkIt=devSinkList.begin() ; devSinkIt!=devSinkList.end() ; ++devSinkIt)
+					{
+						(*devSinkIt)->closeOutput();	
+					}
+				}
+				else {
+					for ( devSinkIt=devSinkList.begin() ; devSinkIt!=devSinkList.end() ; ++devSinkIt)
+					{
+						std::string filename = outputFile + std::string("-") + DeviceSinkWrapper::getDeviceName((*devSinkIt)->getVideoDevice())+std::string("/")+std::to_string(counter);
+						(*devSinkIt)->openOutput(filename);	
+					}
+					counter++;
+				}
+			}
+		}
 	}
 	rtspWrapper.stop();
 	LOG(NOTICE) << "Exiting....";			
