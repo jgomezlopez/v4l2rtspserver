@@ -80,6 +80,7 @@ void V4L2DeviceSource::setOutputFd(int outputFd)
 	pthread_mutex_lock(&m_mutex);
 	m_outfd = outputFd;
 	pthread_mutex_unlock(&m_mutex);
+	LOG(NOTICE) << "new fd: " << m_outfd << "\tchecked with: " << outputFd;
 }
 // Destructor
 V4L2DeviceSource::~V4L2DeviceSource()
@@ -224,6 +225,7 @@ int V4L2DeviceSource::getNextFrame()
 		pthread_mutex_lock(&m_mutex);
 		if (m_outfd != -1) 
 		{
+			LOG(NOTICE) << "dumping: " << m_outfd << "\tsize:" << frameSize;
 			write(m_outfd, buffer, frameSize);
 		}		
 		pthread_mutex_unlock(&m_mutex);

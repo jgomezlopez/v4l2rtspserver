@@ -44,7 +44,14 @@ void sighandler(int n)
 		}
 	}
 	else if (n == SIGUSR1) {
+		printf("SIGINT\n");
 		recording = !recording;
+		if (recording) {
+			printf("RECORDING\n");
+		}
+		else {
+			printf("RECORDING STOPPED\n");
+		}
 	}
 }
 
@@ -309,20 +316,23 @@ int main(int argc, char** argv)
 		if (!outputFile.empty()) {
 			if (prev_rec != recording)
 			{
-				if (recording) {
+				if (!recording) {
 					for ( devSinkIt=devSinkList.begin() ; devSinkIt!=devSinkList.end() ; ++devSinkIt)
 					{
 						(*devSinkIt)->closeOutput();	
+						LOG(NOTICE) << "Stopping: " << (*devSinkIt)->getVideoDevice();
 					}
 				}
 				else {
 					for ( devSinkIt=devSinkList.begin() ; devSinkIt!=devSinkList.end() ; ++devSinkIt)
 					{
-						std::string filename = outputFile + std::string("-") + DeviceSinkWrapper::getDeviceName((*devSinkIt)->getVideoDevice())+std::string("/")+std::to_string(counter);
+						std::string filename = outputFile + std::string("-") + DeviceSinkWrapper::getDeviceName((*devSinkIt)->getVideoDevice())+std::string("-")+std::to_string(counter);
+						LOG(NOTICE) << "Recording: " << (*devSinkIt)->getVideoDevice() << " to " << filename;
 						(*devSinkIt)->openOutput(filename);	
 					}
 					counter++;
 				}
+				prev_rec = recording;
 			}
 		}
 	}
