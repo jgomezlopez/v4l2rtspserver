@@ -155,14 +155,14 @@ void DeviceSinkWrapper::setFramedSource(FramedSource *source) {
 int DeviceSinkWrapper::openOutput(std::string outputFile) {
 	if (!outputFile.empty() && deviceSource)
 	{
-		LOG(NOTICE) << "Starting Recording: " << outputFile;
+		LOG(DEBUG) << "Starting Recording: " << outputFile;
 		V4L2DeviceParameters outparam(outputFile.c_str(), videoSource->getFormat(), videoSource->getWidth(), videoSource->getHeight(), 0, 0);
-		LOG(NOTICE) << "Getting fileSink for : " << outputFile;
+		LOG(DEBUG) << "Getting fileSink for : " << outputFile;
 		fileSink = V4l2Output::create(outparam, ioTypeOut);
 		if (fileSink != NULL)
 		{
 			outFd = fileSink->getFd();
-			LOG(NOTICE) << "Setting fd: " << outFd << " for " << outputFile;
+			LOG(DEBUG) << "Setting fd: " << outFd << " for " << outputFile;
 			deviceSource -> setOutputFd(outFd);
 		}
 	}

@@ -103,6 +103,7 @@ int main(int argc, char** argv)
 	// default parameters
 	const char *dev_name = "/dev/video0,/dev/video0";	
 	unsigned int format = ~0;
+	bool output_prefix = false;
 	std::list<unsigned int> videoformatList;
 	int width = 0;
 	int height = 0;
@@ -167,7 +168,7 @@ int main(int argc, char** argv)
 			
 			// V4L2
 			case 'r':	ioTypeIn  = V4l2Access::IOTYPE_READWRITE; break;
-			case 'w':	ioTypeOut = V4l2Access::IOTYPE_READWRITE; break;	
+			case 'w':	ioTypeOut = V4l2Access::IOTYPE_READWRITE; output_prefix = true; break;	
 			case 'B':	openflags = O_RDWR; break;	
 			case 's':	useThread =  false; break;
 			case 'f':	format    = V4l2Device::fourcc(optarg); if (format) {videoformatList.push_back(format);};  break;
@@ -302,18 +303,23 @@ int main(int argc, char** argv)
 		sinkDevice->setOpenFlags(openflags);
 		devSinkList.push_back(sinkDevice);
 		rtspWrapper.attachDevice(*sinkDevice);
+		if (!output_prefix && !outputFile.empty()) {
+			(*devSinkIt)->openOutput(outputFile);	
+		}
 	}
 
 
 	// main loop
 	signal(SIGINT,sighandler);
-	signal(SIGUSR1,sighandler);
+	if (output_prefix && !outputFile.empty()) {
+		signal(SIGUSR1,sighandler);
+	}
 	rtspWrapper.start(); 
 	bool prev_rec = recording;
 	int counter = 0;
 	while (quit == 0) {
 		sleep(1);
-		if (!outputFile.empty()) {
+		if (!outputFile.empty() && output_prefix) {
 			if (prev_rec != recording)
 			{
 				if (!recording) {
