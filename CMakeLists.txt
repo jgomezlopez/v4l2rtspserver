@@ -67,9 +67,9 @@ endif ()
 # v4l2wrapper
 EXEC_PROGRAM("git submodule update --init")
 aux_source_directory(v4l2wrapper/src LIBSRC_FILES)
-include_directories("v4l2wrapper/inc")
-add_library(v4l2wrapper STATIC ${LIBSRC_FILES})
-target_link_libraries (${PROJECT_NAME} v4l2wrapper) 
+#include_directories("v4l2wrapper/inc")
+#add_library(v4l2wrapper STATIC ${LIBSRC_FILES})
+#target_link_libraries (${PROJECT_NAME} v4l2wrapper) 
 
 # live555
 find_package(LiveMedia)
@@ -98,13 +98,13 @@ endif()
 # librtsp
 aux_source_directory(src SRC_FILES)
 if (LIBLIVEMEDIA_FOUND AND LIBBASICUSAGEENVIRONMENT_FOUND AND LIBUSAGEENVIRONMENT_FOUND AND LIBGROUPSOCK_FOUND)
-    add_library (libv4l2rtspserver SHARED ${LIBSRC_FILES} ${SRC_FILES})	
-    target_link_libraries  (libv4l2rtspserver liveMedia UsageEnvironment BasicUsageEnvironment groupsock v4l2wrapper) 
+    add_library (v4l2rtspwrapper SHARED ${LIBSRC_FILES} ${SRC_FILES})	
+    target_link_libraries  (v4l2rtspwrapper liveMedia UsageEnvironment BasicUsageEnvironment groupsock) 
 else()
-    add_library (libv4l2rtspserver STATIC v4l2wrapper ${LIVESOURCE} ${SRC_FILES})	
+    add_library (v4l2rtspwrapper STATIC v4l2wrapper ${LIVESOURCE} ${SRC_FILES})	
 endif()
-target_include_directories(libv4l2rtspserver PUBLIC inc ${LIVEINCLUDE} "v4l2wrapper/inc")
-target_link_libraries (${PROJECT_NAME} libv4l2rtspserver) 
+target_include_directories(v4l2rtspwrapper PUBLIC inc ${LIVEINCLUDE} "v4l2wrapper/inc")
+target_link_libraries (${PROJECT_NAME} v4l2rtspwrapper) 
 
 #testing
 enable_testing()
@@ -120,16 +120,23 @@ if (SYSTEMD_FOUND)
 	message(STATUS "SystemD directory '${SYSTEMD_SERVICES_INSTALL_DIR}'")
 	
 	configure_file(v4l2rtspserver.service.in ${CMAKE_CURRENT_BINARY_DIR}/v4l2rtspserver.service @ONLY)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/v4l2rtspserver.service DESTINATION ${SYSTEMD_SERVICES_INSTALL_DIR})
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/v4l2rtspserver.service DESTINATION ${SYSTEMD_SERVICES_INSTALL_DIR} COMPONENT utils)
 endif (SYSTEMD_FOUND)
 
 # package
-install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
-install (FILES index.html DESTINATION share/${PROJECT_NAME}/)
-install (FILES hls.js/dist/hls.light.min.js DESTINATION share/${PROJECT_NAME}/hls.js/dist/)
+install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin COMPONENT utils)
+install (FILES index.html DESTINATION share/${PROJECT_NAME}/ COMPONENT utils)
+install (FILES hls.js/dist/hls.light.min.js DESTINATION share/${PROJECT_NAME}/hls.js/dist/ COMPONENT utils)
+
+install (TARGETS v4l2rtspwrapper LIBRARY DESTINATION lib COMPONENT lib)
+install (DIRECTORY v4l2wrapper/inc/ DESTINATION include COMPONENT dev FILES_MATCHING PATTERN "*.h")
+install (DIRECTORY inc/ DESTINATION include COMPONENT dev FILES_MATCHING PATTERN "*.h")
+
 
 SET(CPACK_GENERATOR "DEB")
+set(CPACK_DEB_COMPONENT_INSTALL ON)
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Michel Promonet") 
+SET(CPACK_DEBIAN_COMPONENTS_ALL utils lib dev)
 SET(CPACK_PACKAGE_CONTACT "michel.promonet@free.fr") 
 SET(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 STRING(REGEX REPLACE ",$" "" CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}")
